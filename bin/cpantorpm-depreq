@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# Copyright (c) 2012-2012 Sullivan Beck.  All rights reserved.
+# Copyright (c) 2012-2015 Sullivan Beck.  All rights reserved.
 # This program is free software; you can redistribute it and/or modify it
 # under the same terms as Perl itself.
 
@@ -16,7 +16,9 @@ use strict;
 use warnings;
 use IO::File;
 
-our $VERSION    = "1.01";
+our $VERSION    = "1.00";
+
+#use re 'debug';
 
 ###############################################################################
 # HELP
@@ -93,22 +95,51 @@ my $in = new IO::File;
 # Each name is alphanumeric plus underscore.  The first name must not
 # start with a digit.
 #
+#   $modrx    : a regexp matching and capturing a valid module name
+#
 # A version is either: v1.2.3 ... (minimum of three components) or
 # a decimal number 1.2_3_4
 #
-#   $modrx    : a regexp matching a valid module name (Foo::Bar)
-#   $verrx    : a regexp matching a valid version
-#   $endrx    : a regexp matching what can come after a module name or
-#               a version in a 'package' line
+#   $vrx      : a regexp matching a valid version, with no capture
+#   $verrx    : a regexp matching and capturing a valid version
+#   $verqrx   : a regexp matching a quoted version number
+#
+# package NAME lines:
+#   $endvrx   : a regexp matching what can come after a version in
+#               a good package line
+#   $endmrx   : a regexp matching what can come after a module name
+#               in a good package line not containing a version
+#
+# $VERSION = VERS lines:
+#   $verqrx   : a regexp matching version numbers either alone, enclosed
+#               in quotes, or enclosed in q() or qq() (the general form
+#               of q#...# is not yet supported)
+
+
 #   $vprrx    : a "prefix" that might be used before the version number
 #               'VERS', "VERS", q(VERS), qq(VERS)
-#   $begrx    : matches an optional 'BEGIN {'
 
-my $modrx = qr/([A-Za-z_][A-Za-z0-9_]*(?:::[A-Za-z0-9_]+)*)/;
-my $verrx = qr/(v\d+(?:\.\d+){2,}|\d*\.\d+(?:_\d+)*|\d+\.?)/;
-my $endrx = qr/(?:;|\s|\{|\(|$)/;
-my $vprrx = qr/(?:'|"|qq.|q.)/;
-my $begrx = qr/(?:BEGIN\s*\{\s*)?/;
+
+#   $endrx    : a regexp matching what can come after a module name or
+#               a version in a 'package' line
+#   $begrx    : matches an optional 'BEGIN {'
+#   $seprx    : matches the string that can separate portions of a perl
+#               command (including whitespace, newlines, and trailing
+#               comments) in a multi-line form
+
+my $modrx  = qr/([A-Za-z_][A-Za-z0-9_]*(?:::[A-Za-z0-9_]+)*)/;
+my $vrx    = qr/v\d+(?:\.\d+){2,}|\d*\.\d+(?:_\d+)*|\d+\.?/;
+my $verrx  = qr/($vrx)/;
+my $verqrx = qr/(?:($vrx)|'($vrx)'|"($vrx)"|q\(($vrx)\)|qq\(($vrx)\))/;
+
+my $endvrx = qr/(?:;|\s|\{|\#|$)/;
+my $endmrx = qr/(?:\s*;|\s*\{)/;
+
+my $vprrx  = qr/(?:'|"|qq.|q.)/;
+my $begrx  = qr/(?:BEGIN\s*\{\s*)?/;
+my $seprx  = qr/(?:\#.*?\n|\s+|\n)+/;
+
+my $endrx  = qr/(?:;|\s|\{|\(|\#|$)/;
 
 foreach my $file (@FILES) {
    if (! $in->open($file)) {
@@ -153,32 +184,52 @@ foreach my $file (@FILES) {
          # Lines of the form:
          #    package NAME;
          #    package NAME VERS;
+         #    package NAME { ... };
+         #    package NAME VERS { ... };
+         # (which may be split across lines)
 
-         if (/^\s*package\s+$modrx/) {
+         if (/^\s*package/) {
+            my($pack,$ver);
 
-            my ($pack,$ver);
-            if      (/^\s*package\s+$modrx\s+$verrx$endrx/) {
-               ($pack,$ver) = ($1,$2);
-            } elsif (/^\s*package\s+$modrx$endrx/) {
-               ($pack,$ver) = ($1,'');
-            } else {
-               next LINE;
+            while (1) {
+               if      (/\A\s*package$seprx$modrx$seprx$verrx$endvrx/s) {
+                  ($pack,$ver) = ($1,$2);
+                  last;
+               } elsif (/\A\s*package$seprx$modrx$endmrx/s) {
+                  ($pack,$ver) = ($1,'');
+                  last;
+               } elsif (/\A\s*package$seprx?\z/s  ||
+                        /\A\s*package$seprx$modrx$seprx?\z/s) {
+                  $_ .= <$in>;
+                  next;
+               } else {
+                  warn "Malformed package line\n";
+                  next LINE;
+               }
             }
+
             $result{$pack} = $ver;
             $package       = $pack;
 
             next LINE;
          }
 
+
          # Lines containing:
          #    $[NAME::]VERSION = VERS;
          #                    or 'VERS', "VERS", q(VERS), qq(VERS)
          #    $[NAME::]VERSION = .* $Revision: VERS $
+         #
+         # Currently, we'll only support single-line defintions.
 
-         next  if (! $package);
-         if (/\$(?:${package}::)?VERSION\s*=\s*$verrx$endrx/  ||
-             /\$(?:${package}::)?VERSION\s*=\s*$vprrx$verrx/) {
-            $result{$package} = $1;
+         next LINE  if (! $package);
+         my @m;
+         if (@m = (/\$(?:${package}::)?VERSION\s*=\s*$verqrx/s)) {
+            foreach my $m (@m) {
+               next  if (! defined $m);
+               $result{$package} = $m;
+               next LINE;
+            }
             next LINE;
          }
 
@@ -203,28 +254,29 @@ foreach my $file (@FILES) {
 
          my ($mod,$ver);
 
-         if      (/^\s*$begrx(?:use)\s+$modrx\s+$verrx$endrx/) {
+         if      (/^\s*$begrx(?:use)$seprx$modrx$seprx$verrx$endrx/s) {
             ($mod,$ver) = ($1,$2);
 
-         } elsif (/^\s*$begrx(?:use|require)\s+$modrx$endrx/) {
+         } elsif (/^\s*$begrx(?:use|require)$seprx$modrx$endrx/s) {
             ($mod,$ver) = ($1,0);
 
-         } elsif (/^\s*$begrx(?:use|require)\s+$verrx$endrx/) {
+         } elsif (/^\s*$begrx(?:use|require)$seprx$verrx$endrx/s) {
             ($mod,$ver) = ('',$1);
 
          } else {
             next LINE;
          }
 
-         next  if ($mod eq 'vars'     ||
-                   $mod eq 'strict'   ||
-                   $mod eq 'integer'  ||
-                   $mod eq 'warnings' ||
-                   $mod eq 'feature'  ||
-                   $mod eq 'constant' ||
-                   $mod eq 'base'     ||
-                   $mod eq 'Exporter'
-                  );
+         next LINE  if ($mod eq 'vars'     ||
+                        $mod eq 'strict'   ||
+                        $mod eq 'integer'  ||
+                        $mod eq 'warnings' ||
+                        $mod eq 'feature'  ||
+                        $mod eq 'constant' ||
+                        $mod eq 'base'     ||
+                        $mod eq 're'       ||
+                        $mod eq 'Exporter'
+                       );
 
          if ($mod) {
             $result{$mod} = $ver

@@ -1,5 +1,5 @@
 NAME
-    cpantorpm - An RPM package for perl modules
+    cpantorpm - An RPM packager for perl modules
 
 SYNOPSIS
        cpantorpm [OPTIONS] MODULE
@@ -7,7 +7,7 @@ SYNOPSIS
     This script takes a perl module and creates an RPM for it.
 
 DESCRIPTION
-    This script handles the entire process of obtaining a perl module and
+    This script automates the entire process of obtaining a perl module and
     turning it into an RPM package. This includes the steps of obtaining the
     module distribution, creating an RPM from it, and then making the
     package available in various ways.
@@ -20,10 +20,12 @@ DESCRIPTION
     Build the package
     Generate a spec file
     Create the RPM packages
+    Sign the RPM packages
     Install the RPM (optional)
     Store the RPM in a local yum repository (optional)
 
 OPTIONS
+  General Options
     The following general purpose options exist.
 
     -h/--help
@@ -48,6 +50,7 @@ OPTIONS
         may also come from a config file. The config file may contain the
         options for any number of modules and is described below.
 
+  Download Options
     The following options affect how a module is downloaded.
 
     -c/--cpan
@@ -55,6 +58,17 @@ OPTIONS
         CPANPLUS and, if that is not available, it will use CPAN. If this
         option is included, only CPAN will be tried.
 
+    --extracted DIR
+        Occasionally, the archive file on CPAN is broken in that the archive
+        file (minus the relevent suffixes) is not the same as the archived
+        directory.
+
+        For example, the archive Foo-Bar-1.00.tar.gz contains the directory
+        Foo-Bar instead of Foo-Bar-1.00 .
+
+        Set DIR to be the name of the directory that it contains.
+
+  Module Description Options
     Once the module is downloaded, it will be analyzed and various
     information about the module which will be used in creating the RPM is
     gathered. This includes looking at the perl META files, the main POD
@@ -104,6 +118,7 @@ OPTIONS
         This specifies the version of the RPM. It defaults to the version of
         the package, but can be overridden here.
 
+  SPEC File Options
     The following options are used during the SPEC file creation step:
 
     -n/--no-tests
@@ -116,10 +131,10 @@ OPTIONS
         file, but (by use of an environment variable), the tests will not be
         run when the RPM is created. In this instance, if the SPEC file is
         used to create an RPM at some later date, the tests will run (unless
-        the environment variable RPMBUILD_NO_TESTS is set).
+        the environment variable RPMBUILD_NOTESTS is set).
 
-        With the first option, the lines necessary to run the tests will not
-        be added to the SPEC file at all.
+        With the second option, the lines necessary to run the tests will
+        not be added to the SPEC file at all.
 
     -d/--no-deps
     --NO-DEPS
@@ -214,14 +229,18 @@ OPTIONS
         feature from the requirements list, or the list of features
         provided.
 
-        Unfortunately, there is no cross-platform way of doing this, so
-        these options will only function on a RHEL or Fedora computer.
-        Functionality on other platforms may be added in the future.
-
     -m, --macros
         Use the macro form of common SPEC constructs over the environment
         variable form (e.g. %{buildroot} vs $RPM_BUILD_ROOT).
 
+    --build-rec, --test-rec, --runtime-rec
+        Many modules have a list of modules that are recommended to be
+        installed at build time, test time, or at run time, but they are not
+        absolutely required. By default, these modules will not be included
+        as requirements for the various steps. Adding these options will
+        require them.
+
+  Module Build Options
     The perl module must be built as part of the process. The following
     options are used during the build:
 
@@ -302,6 +321,32 @@ OPTIONS
         different hierarchy (i.e. man pages in /usr and libraries in /opt
         for example).
 
+    --patch FILE
+    --patch-dir DIR
+    --script FILE
+    --script-dir DIR
+        In a few cases, a distribution cannot be properly packaged unless it
+        is first modified. The modification can be done by applying a patch,
+        or by running a script, or both. Patches are applied first, followed
+        by scripts.
+
+        To specify a patch file or script file, use the --patch or --script
+        options. Alternately, you can specify a directory containing files
+        named PACKAGE.sh or PACKAGE.diff where PACKAGE is the string that
+        was passed in on the command line.
+
+        By default, no patch or script will be used. They will only be used
+        if one of these options is given.
+
+        Scripts and patches will both be applied while in the top directory
+        of the package (i.e. the directory where a Makefile.PL or Build.PL
+        script exists).
+
+        The --script-dir option has a second use. If there is a file named
+        PACKAGE.build-sh in it, the lines in that file are added to the SPEC
+        file at the end of the %build step.
+
+  Options Controlling Cpantorpm Steps
     To control what steps get done, the following options are available:
 
     --spec-only
@@ -314,6 +359,57 @@ OPTIONS
     --no-clean
         By default, the build tree will be removed after the RPM is built.
         If this option is given, it will be left in place.
+
+    -s/--sign
+        If this option is given, a GPG signature will be added to the
+        package.
+
+        It should be noted that this step is often interactive, so if the
+        installation process is scripted in any way, adding this option may
+        interfere with the process.
+
+        Please refer to the secrtion SIGN THE RPM PACKAGE for more
+        information.
+
+    -I/--install
+    --install-new
+    --install-force
+        If any of these options are given, cpantorpm will attempt to install
+        the RPM on the system after it is built. If you are running as root,
+        this will be done by simply running the appropriate rpm command. If
+        you are running as any other user, the command will be run using
+        sudo.
+
+        By default, the '-U' flag is given to the rpm command which will
+        cause it to install the RPM if it is a new package, or an upgrade to
+        an existing package.
+
+        If the --install-new option is given, the '-i' option will be passed
+        to the rpm command and the RPM will only be installable if it is a
+        new package.
+
+        If the --install-force option is used, the flags '-U --force' will
+        be used which will replace an existing package, even if the same
+        version is already installed.
+
+    -y/--yum DIR
+        If this option is given, the RPMs (both binary and source) will be
+        copied to a local yum repository once they are built.
+
+  Misc Options
+    The following misc. options are also available:
+
+    --gpg-path PATH
+    --gpg-name NAME
+        These options are used to set the path the the GPG directory (which
+        contains the keyring) and the name of the key that will be used.
+
+    --gpg-password PASSWORD
+    --gpg-passfile FILE
+        When signing a package, this script become interactive unless expect
+        (or perl Expect) is available. If one of these is available, the
+        password can be passed in at the command line (or a file containing
+        the password) using one of these two commands.
 
 OBTAIN THE PERL MODULE
     The perl module may be obtained in a number of different ways. The perl
@@ -361,81 +457,84 @@ OBTAIN THE PERL MODULE
            .tar.bz2
            .zip
 
-            The module must contain either a Build.PL or Makefile.PL script.
-            A module using some other non-standard build procedure cannot be
-            built with this script.
+    Standard install script
+        The module must contain either a Build.PL or Makefile.PL script. A
+        module using some other non-standard build procedure cannot be built
+        with this script.
 
-        Getting the module in each of the 4 ways requires different system
-        requirements. In general, the script will try several different ways
-        to get the module, and will only fail if all of the different
-        methods fail.
+    Getting the module in each of the 4 ways requires different system
+    requirements. In general, the script will try several different ways to
+    get the module, and will only fail if all of the different methods fail.
 
-        The following system requirements exist for the different ways of
-        obtaining a module:
+    The following system requirements exist for the different ways of
+    obtaining a module:
 
-        From a local directory
-            You must be able to run the system command 'cp -r' (to
-            recursively copy a directory) or be able to load the module
-            File::Copy::Recursive.
+    From a local directory
+        You must be able to run the system command 'cp -r' (to recursively
+        copy a directory) or be able to load the module
+        File::Copy::Recursive.
 
-        From a local file
-            You must be able to run the system command 'cp' (to copy a file)
-            or be able to load the module File::Copy.
+    From a local file
+        You must be able to run the system command 'cp' (to copy a file) or
+        be able to load the module File::Copy.
 
-            In addition, you must meet additional requirements for working
-            with the different types of archives as described next.
+        In addition, you must meet additional requirements for working with
+        the different types of archives as described next.
 
-        From a URL
-            To get a module from a URL, you have to have one of the
-            following packages installed:
+    From a URL
+        To get a module from a URL, you have to have one of the following
+        packages installed:
 
-               curl
-               wget
-               lynx
-               links
-               lftp
+           curl
+           wget
+           lynx
+           links
+           lftp
 
-            or be able to load one of the modules:
+        or be able to load one of the modules:
 
-               LWP::UserAgent
-               HTTP::Lite
+           LWP::UserAgent
+           HTTP::Lite
 
-            In addition, you must meet additional requirements for working
-            with the different types of archives as described next.
+        In addition, you must meet additional requirements for working with
+        the different types of archives as described next.
 
-        From CPAN
-            To get a module from CPAN, you must be able to load one of the
-            perl modules:
+    From CPAN
+        To get a module from CPAN, you must be able to load one of the perl
+        modules:
 
-               CPANPLUS::Backend
-               CPAN
+           CPANPLUS::Backend
+           CPAN
 
-            In addition, you must meet additional requirements for working
-            with the different types of archives as described next.
+        In addition, you must meet additional requirements for working with
+        the different types of archives as described next.
 
-        In each case (except for obaining a module from a local directory),
-        once you have obtained the archive, you need to be able to extract
-        it.
+    In each case (except for obaining a module from a local directory), once
+    you have obtained the archive, you need to be able to extract it.
 
-        To do this, you need to meet the system requirements for the
-        appropriate type of archive:
+    To do this, you need to meet the system requirements for the appropriate
+    type of archive:
 
-        .tar, .tar.gz, .tgz files
-            You need to be able to run the system 'tar' command, or be able
-            to load one of the perl modules:
+    .tar, .tar.gz, .tgz files
+        You need to be able to run the system 'tar' command, or be able to
+        load one of the perl modules:
 
-               Archive::Extract
-               Archive::Tar
+           Archive::Extract
+           Archive::Tar
 
-            These modules will make use of other modules to handle .gz or
-            .bz2 compression.
+        These modules will make use of other modules to handle .gz or .bz2
+        compression.
 
-        .zip files
-            You need to be able to run the system 'unzip' command, or be
-            able to load one of the perl modules:
+    .zip files
+        You need to be able to run the system 'unzip' command, or be able to
+        load one of the perl modules:
 
-               Archive::Extract
-               Archive::Zip
+           Archive::Extract
+           Archive::Zip
+
+    Once the package is obtained, in some cases it may be necessary to apply
+    patches or run a script in it to fix things that make it not suitable
+    for packaging.
 
 PARSE VARIOUS PERL MODULES FILES FOR NECESSARY INFORMATION
     Building an RPM correctly involves getting a great deal of information
@@ -464,7 +563,7 @@ PARSE VARIOUS PERL MODULES FILES FOR NECESSARY INFORMATION
         In order to interpret a JSON file, you have to be able to load one
         of the following perl modules:
 
-           Parse::CPAN::Meta
+           Parse::CPAN::Meta 1.40
            JSON
            JSON::XS
            JSON::PP
@@ -479,8 +578,6 @@ PARSE VARIOUS PERL MODULES FILES FOR NECESSARY INFORMATION
         In order to interpret a YAML file, you have to be able to load one
         of the following perl modules:
 
-           Parse::CPAN::Meta
-           CPAN::Meta::YAML
            YAML
            YAML::Syck
            YAML::XS
@@ -581,20 +678,69 @@ GENERATE A SPEC FILE
 
 CREATE THE RPM PACKAGES
     Once the SPEC file is done, the RPM can be created using the standard
-    RPM tools.
+    RPM tool 'rpmbuild'.
 
     It uses the standard RPM file structure and creates both a source RPM
     and a binary RPM.
 
-    INSTALL THE RPM
-        This is an optional step.
+SIGN THE RPM PACKAGES
+    This is an optional step. If can be used to embed a GPG signature in the
+    package.
 
-        *** FIX ***
+    In order sign a package, you must have a GPG key available. You must
+    have the gpg package installed on your system and you must have at least
+    one GPG key created.
 
-    STORE THE RPM IN A LOCAL YUM REPOSITORY
-        This is an optional step.
+    The path to the GPG directory be specified by one of the following:
 
-        *** FIX ***
+       the value of the --gpg-path option
+
+       the value of the %_gpg_path rpm macro
+
+       the value determined by gpg using any currently
+       set environment variables
+
+    If no keyring is found, signing is not available.
+
+    The key to use is specified by:
+
+       the value of the --gpg-name option
+
+       the value of the %_gpg_name rpm macro
+
+       the only key in the keyring (if the keyring
+       contains exactly one key)
+
+    If the key cannot be uniquely determined, signing is not available.
+
+    The rpm command to sign a package is interactive. In order to script
+    everything, it is necessary to use a tool like expect. If such a tool is
+    not available, and if you are signing packages, this script will be
+    interactive. Currently, if the expect program is installed or the perl
+    Expect module is available, signing can be done non-interactively if
+    either the --gpg-passwd or --gpg-passfile options are passed in.
+
+INSTALL THE RPM
+    This is an optional step.
+
+    After the RPM is successfully built, it can be installed on the system.
+    This will be done in one of two ways. If you are running this as root,
+    it will simply use the rpm command. Otherwise, it will use sudo to run
+    the rpm command.
+
+STORE THE RPM IN A LOCAL YUM REPOSITORY
+    This is an optional step.
+
+    If the --yum DIR option is passed in, the RPMs (both source and binary)
+    are copied in to a local yum repository. The repository is stored at DIR
+    and should have the following directories:
+
+       RPMS
+       SRPMS
+
+    RPMs will be stored in either the RPMS/<arch> directory (if it exists)
+    or directly in the RPMS directory. <arch> is typicall something like
+    'noarch' or 'x86_64'.
 
 CONFIG FILE
     A config file can be created which sets options on a per-module basis.
@@ -625,7 +771,7 @@ CONFIG FILE
        --summary "This is the summary"
 
 SYSTEM REQUIREMENTS
-    This module will try to function under many different situations, and it
+    This script will try to function under many different situations, and it
     will often try multiple methods to accomplish a task, and many of those
     methods will be available on any common linux configuration. As such, a
     rigorous list of system requirements is overly complicated and won't be
@@ -642,12 +788,15 @@ SYSTEM REQUIREMENTS
        CPAN
        CPANPLUS
 
-    To make sure it's configured, make sure you can run 'cpan' or 'cpanp' at
-    the command line and have it work.
+    To make sure it's configured, make sure you can run cpan or cpanp at the
+    command line and have it work.
 
-    You also need to be able to read the YAML and JSON files included in
+    If you will be applying patches to a package, you will need the patch
+    command.
+
+    You also need to be able to read both YAML and JSON files included in
     almost every module. This means that you will need one JSON module
-    installed of the following:
+    installed out of the following:
 
        JSON
        JSON::XS
@@ -675,54 +824,157 @@ SYSTEM REQUIREMENTS
     installed in order to build modules that use the Build.PL and
     Makefile.PL scripts.
 
-    This script also relies on the 'strace' program. This is necessary
-    because many Makefile.PL and Build.PL scripts are interactive, but there
-    is no easy way to determine whether a script is running because it is
-    doing something time consuming, or if it's waiting on user input.
-    'strace' is used to determine that.
+    In order to build the rpm, you need the rpmbuild program.
+
+    This script also relies on the strace program. This is necessary because
+    many Makefile.PL and Build.PL scripts are interactive so when you run
+    them, they hang waiting for input. Unfortunately, I was not able to find
+    any pure perl way to run a program as a child (or in a thread) and
+    monitor it to see if it's still running because it's doing work, or
+    still running because it's waiting on user input. Though somewhat crude,
+    strace can be used to determine that.
+
+    In order to sign packages, you must have the gpg program installed, and
+    you must have a key set up to sign with. In order to do this
+    non-interactively, you also need either the Expect module or the expect
+    program installed.
+
+    In order to install the package, you either must be running as root, or
+    have the sudo program. The sudo command may be interactive, depending on
+    how you have it set up.
+
+    In order to install RPMs in a yum repository, the repository must exist.
 
 HISTORY
     This script is based loosely on Erick Calder's cpan2rpm script and
-    Steven Pritchard's cpanspec script.
+    Steven Pritchard's cpanspec script. Initially, I set out to modify one
+    or the other of them, but I found that the modifications that I felt
+    necessary were extensive enough that I decided a fresh implementation
+    was both faster and cleaner.
 
-    cpan2rpm had a lot more functionality, but has not been supported since
-    2003. It has virtually no support for modules built using Build.PL
-    scripts, and it's method of generating spec files was much too
-    complicated and error prone. Initially, I was planning on modifying it,
-    and I spent a bit of time working in that direction, but in the end, I
-    decided that fixing it was actually more work than rewriting it, and I'd
-    have a much cleaner script in the end if I rewrote it.
+    cpan2rpm
+        cpan2rpm had basically the full functionality that I wanted. It
+        would download a module, write a spec file for it, create an RPM,
+        and then install it. The only functionality that was missing was
+        some simple functionality to add it to a local yum repository. That
+        would have been very simple to add. However, it suffered from
+        several other significant problems.
 
-    cpanspec is much better at generating spec files, and is actively
-    supported, but is missing the more complete functionality of cpan2rpm.
-    It also made a few assumptions about how you wanted modules to be
-    installed (for example, it will only install in the vendor location). I
-    considered writing a wrapper around cpanspec, but in the end, I was not
-    satisfied with it's functionality, and even then, I'd be required to
-    modify it to get rid of some of the limitations that I didn't want.
+        cpan2rpm is old. It has not been supported since 2003. It has
+        virtually no support for modules built using Build.PL scripts, and
+        adding it would have been quite complicated.
 
-    Perhaps the biggest single weakness in both of them was that they made
-    assumptions about the format of the Makefile.PL and Build.PL scripts
-    that were not justfied. Both cpan2rpm and cpanspec tried to interpret
-    the Build.PL and Makefile.PL scripts to determine information about the
-    module requirements (and other information). This relies on the fact
-    that standard forms of these files are used. Since there is no standard
-    for these files, I did not like the assumption that this could be done
-    and I've replaced this by an alternate step. Rather than try to
-    interpret the Makefile.PL or Build.PL scripts, cpantorpm will actually
-    try to build the modules. If it fails for any reason, the error output
-    will be shown and this script will exit. This script will trap any build
-    processes which require human input (which some Makefile.PL and Build.PL
-    scripts do) rather than hanging.
+        cpan2rpm is also not written as cleanly, or in a style that I'd like
+        to maintain, so it would take a bit of cleaning up to turn it into
+        something I'd want to maintain.
 
-    Since I was not satisfied with the assuptions they made, and since
-    starting from either would require modification on my part to support
-    the functionality I wanted, I decided to just write my own copying the
-    code from cpanspec for the functionality I wanted (I LOVE open source
-    licenses!) modified as necessary. That being said, I'm very grateful to
-    the author of cpanspec who's work has made mine much easier.
+        The main problem though is how it gets information from the
+        Makefile.PL script. In order to get all of the information necessary
+        to create a SPEC file, there's a lot of information about the module
+        that needs to be examined. Much of that information is stored in the
+        various META files in any new module distribution. None of that is
+        used in cpan2rpm (which predates most of them), so that would have
+        to be added. However, even with the META files, some information
+        comes from the Makefile.PL (or Build.PL script) such as the default
+        install location.
 
-    Hopefully, cpantorpm gives the best of both worlds.
+        Since the data is in a script, cpan2rpm tries to be intelligent
+        about extracting the information. It loads in the Makefile.PL
+        script, modifies it (by turning 'exit' into 'return') and evals it.
+        The theory is that by eval'ing it, you end up with the appropriate
+        data structure that you can examine.
+
+        The modifications that it makes are completely unjustified though.
+        It makes drastic assumptions about what the Makefile.PL file looks
+        like, and I can think of any number of cases where turning 'exit'
+        into 'return' won't produce the result you want.
+
+        As such, cpan2rpm's handling of the Makefile.PL file needed to be
+        replaced entirely (and since that makes up a significant portion of
+        the script, that justified a complete rewrite).
+
+        In addition, if the script contained in Makefile.PL is interactive,
+        cpan2rpm hangs silently while trying to eval it, and there is no
+        easy way to determine what is causing it to hang.
+
+    cpanspec
+        cpanspec is much cleaner in most respects. It is well written,
+        handles both Makefile.PL and Build.PL installs, and handles all of
+        the new META files.
+
+        However, it has a few other problems.
+
+        It was written specifically for redhat distributions (redhat,
+        centos, fedora) and hardcodes some of the redhat specific paths in
+        it. Other RPM based distributions (such as OpenSuSE which I use) use
+        different paths. At the very least, the cpanspec file would need to
+        be modified to add options to override the defaults.
+
+        cpanspec also makes assumptions about where you want to install the
+        modules. It will only install in the vendor location of the primary
+        perl installation. If you want to install them anywhere else, you
+        are out of luck.
+
+        But the single biggest weakness was how it handles the Makefile.PL
+        and Build.PL scripts. Rather than evaluating the code, cpanspec just
+        opens them and tries to parse information from them.
+
+        Again, given that these are perl scripts, the only reliable way to
+        parse them is to actually use the perl interpreter. Although most
+        modern modules include Makefile.PL or Build.PL scripts that follow
+        certain conventions, it is by no means guaranteed, so I was not
+        satisfied with this assumption.
+
+        As with cpan2rpm, cpanspec does not deal with interactive installs.
+        It simply shuffles the problem to another location. In this case,
+        once the SPEC file is created, it is necessary to run rpmbuild, and
+        this will hang.
+
+    Due to the weaknesses in both of the existing alternatives, I decided a
+    clean rewrite was in order. The goals were:
+
+    Beginning-to-end functionality
+        cpantorpm will download the module from CPAN, create the SPEC file,
+        generate an RPM, install it, and store the RPM in a local YUM
+        repository for other hosts to use.
+
+    Cross platform
+        cpantorpm will work on any RPM based distribution (though this is
+        only tested on redhat and OpenSuSE to date). Also, many of the steps
+        can be done in many different ways, different one of which may be
+        available by default platforms, so most steps will try more than one
+        way to accomplish the task.
+
+        For example, to download a module, cpantorpm will use the CPAN
+        module, the CPANPLUS module, and various tools to download via HTTP
+        (such as wget, curl, etc.).
+
+    Correctly handle Makefile.PL and Build.PL
+        The only way to correctly handle these scripts is to actually build
+        the module. The files generated contain all of the information in a
+        standard format, and we can get it without making any assumptions
+        about the format of these scripts.
+
+    Handle interactive installs
+        Many installs are potentially interactive. If you are missing
+        prerequisites, many modules will stop and ask you if you want to
+        install them first.
+
+        cpantorpm traps this behavior and allows you to handle it, rather
+        than hanging for an unknown reason.
+
+        Note: by 'handle it', it will not try to install them. Rather, the
+        cpantorpm script will let you know what was being asked, and then
+        exit, and at that point, it's up to you to correct the problem. A
+        future version of cpantorpm may include some automatic handling of
+        missing prerequisites which is the primary cause of interactive
+        installs hanging.
+
+    All that being said, I have borrowed ideas (and in rare instances, code)
+    freely from cpanspec and cpan2rpm. I'm very grateful to the authors of
+    both cpan2rpm and cpanspec who's work has made mine much easier.
+
+    Hopefully, cpantorpm takes the best of both worlds and improves on that.
 
 KNOWN BUGS
     None known.
@@ -743,10 +995,10 @@ BUGS AND QUESTIONS
 
        cpantorpm -v
 
-    SEE ALSO
-        cpan2rpm - Erick Calder's script to generate RPMs
+SEE ALSO
+    cpan2rpm - Erick Calder's script to generate RPMs
 
-        cpanspec - Steven Pritchard's script to generate spec files
+    cpanspec - Steven Pritchard's script to generate spec files
 
 LICENSE
     This script is free software; you can redistribute it and/or modify it
@@ -754,26 +1006,4 @@ LICENSE
 
 AUTHOR
     Sullivan Beck (sbeck@cpan.org)
-
-POD ERRORS
-    Hey! The above document had some coding errors, which are explained
-    below:
-
-    Around line 3671:
-        =over should be: '=over' or '=over positive_number'
-
-    Around line 3763:
-        You forgot a '=back' before '=head1'
-
-    Around line 3930:
-        '=item' outside of any '=over'
-
-    Around line 3942:
-        You forgot a '=back' before '=head1'
-
-    Around line 4095:
-        '=item' outside of any '=over'
-
-    Around line 4101:
-        You forgot a '=back' before '=head1'
 

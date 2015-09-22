@@ -1,13 +1,21 @@
-.travis.yml
-Build.PL
-cpantorpm
-cpantorpm-depreq
+bin/cpantorpm
+bin/cpantorpm-depreq
+bin/cpantorpm.pod
+Changes
+examples/modopts.yaml
+examples/test_prov.exp
+examples/test_prov.pl
+examples/test_vers.exp
+examples/test_vers.pl
 INSTALL
 internal/_no_tests
-internal/build.yaml
 internal/TODO
 LICENSE
 Makefile.PL
 MANIFEST			This list of files
-modopts.yaml
 README
+t/pod.dirs
+t/pod.t
+t/runtests
+META.yml                                 Module YAML meta-data (added by MakeMaker)
+META.json                                Module JSON meta-data (added by MakeMaker)
