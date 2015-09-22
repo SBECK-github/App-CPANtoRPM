@@ -33,7 +33,7 @@ $VERS  = $Config{'version'};
 # GLOBAL VARIABLES
 ###############################################################################
 
-our $VERSION    = "1.00";
+our $VERSION    = "1.01";
 
 our $TMPDIR     = "/tmp/cpantorpm";
 
