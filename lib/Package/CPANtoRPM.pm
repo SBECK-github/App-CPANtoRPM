@@ -11,7 +11,7 @@ use POSIX;
 use IO::File;
 
 our($VERSION);
-$VERSION = "1.01";
+$VERSION = "1.02";
 
 $| = 1;
 
