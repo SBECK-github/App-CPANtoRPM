@@ -13,12 +13,16 @@ my $Pvers   = $];
 my $ConvVers= $ExtUtils::MakeMaker::VERSION;
 
 my %module_prereq = (
+   'Config'                   => '0',
+   'IO::File'                 => '0',
+   'POSIX'                    => '0',
 );
 
 my %script_prereq = (
 );
 
 my %test_prereq = (
+   'Test::More'               => '0',
 );
 
 my %config_prereq = (
@@ -50,8 +54,40 @@ WriteMakefile(
    ($EU_MM_V >= 6.64
     ? (TEST_REQUIRES   => \%test_prereq)
     : ()),
+   ($EU_MM_V > 6.45
+    ? (META_ADD => {
+          provides     => {
+             'Package::CPANtoRPM' => {
+                file    => 'CPANtoRPM.pm',
+                version => '1.01',
+             },
+
+          },
+       }
+      )
+    : ()),
+
+   ($EU_MM_V > 6.46
+    ? (META_MERGE => {
+          'meta-spec'  => {
+             version   => 2,
+          },
+          resources    => {
+             repository => {
+                type => 'git',
+                web  => 'https://github.com/SBECK-github/MODULE_PKG',
+                url  => 'git://github.com/SBECK-github/MODULE_PKG.git',
+             },
+          },
+       }
+      )
+    : ()),
+
    EXE_FILES        => [
-                        'examples/test_vers.pl',
-                        'examples/test_prov.pl',
+                        'bin/cpantorpm-depreq',
+                        'bin/cpantorpm',
+
                        ],
+
+
 );

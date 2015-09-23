@@ -1,0 +1,7 @@
+---
+script:
+   bin/cpantorpm-depreq: 1
+   bin/cpantorpm: 1
+   examples/test_prov.pl: 0
+   examples/test_vers.pl: 0
+git: 1

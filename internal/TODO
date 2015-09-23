@@ -10,3 +10,7 @@ files we actually install.
 
 This was written using ideas from cpanspec-1.78.
 
+===
+
+Add perl.prov and perl.dep to internal so I can add any changes from redhat
+

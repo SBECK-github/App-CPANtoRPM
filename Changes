@@ -5,7 +5,7 @@ Any suggestions, bug reports, or donations :-) should be sent to me.
 1.00  2012-11-30
   - Initial release
 
-1.01
+1.01  2015-09-23
   - Minor correction to 'sub commands' arguments.  Mark Knutsen
   - No longer requires a new version of Build::Module to install.  Mike Pomraning
   - Significant improvements to cpantorpm-depreq.
@@ -16,3 +16,6 @@ Any suggestions, bug reports, or donations :-) should be sent to me.
   - Added the --env option
   - Fixed a bug where the newly built module was not correctly examined to
     see what it required
+  - Reorganized to be a real module with a wrapper script (to make it work
+    better with CPAN)
+

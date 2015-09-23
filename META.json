@@ -32,11 +32,32 @@
       },
       "runtime" : {
          "requires" : {
+            "Config" : "0",
+            "IO::File" : "0",
+            "POSIX" : "0",
             "perl" : "5.006"
+         }
+      },
+      "test" : {
+         "requires" : {
+            "Test::More" : "0"
          }
       }
    },
+   "provides" : {
+      "Package::CPANtoRPM" : {
+         "file" : "CPANtoRPM.pm",
+         "version" : "1.01"
+      }
+   },
    "release_status" : "stable",
+   "resources" : {
+      "repository" : {
+         "type" : "git",
+         "url" : "git://github.com/SBECK-github/MODULE_PKG.git",
+         "web" : "https://github.com/SBECK-github/MODULE_PKG"
+      }
+   },
    "version" : "1.01",
    "x_serialization_backend" : "JSON::PP version 2.27203"
 }
