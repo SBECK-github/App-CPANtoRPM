@@ -1952,7 +1952,7 @@ sub _categorize_files {
             if      ($f =~ /\.exists$/) {
                next;
 
-            } elsif ($f =~ m,^lib/\Q$ARCH\E/.*\.pm$,) {
+            } elsif ($f =~ m,^lib/\Q$ARCH\E/.*\.pm$, || $f =~ m,^arch/auto/.*\.so$,) {
                $package{'instfiles'}{'pm'}{$f}      = 1;
                $package{'arch_inst'}                = 1;
 
@@ -2042,6 +2042,11 @@ sub _categorize_files {
             }
          }
       }
+   }
+
+   # If we are doing an arch install, then turn off the noarch lib_inst
+   if ($package{'arch_inst'}) {
+       $package{'lib_inst'}=0;
    }
 
    #
@@ -3144,12 +3149,14 @@ sub _commands {
          $package{'man_dir'}  = '%{_mandir}';
          if      ($insttype eq 'perl') {
             $package{'lib_dir'}  = '%{perl_privlib}';
+            $package{'arch_dir'}  = '%{perl_archlib}';
          } elsif ($insttype eq 'site') {
             $package{'lib_dir'}  = '%{perl_sitelib}';
+            $package{'arch_dir'}  = '%{perl_sitearch}';
          } else {
             $package{'lib_dir'}  = '%{perl_vendorlib}';
+            $package{'arch_dir'}  = '%{perl_vendorarch}';
          }
-         $package{'arch_dir'} = "$package{lib_dir}/$ARCH";
 
          last DIR_ARGS;
       }
