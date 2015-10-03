@@ -1852,9 +1852,7 @@ sub _get_meta {
    #
 
    $package{'prefix'}   = $$self{'prefix'};
-   my $pkgname          = ($$self{'prefix'}
-                           ? $$self{'prefix'} . $package{'name'}
-                           : $package{'name'});
+   my $pkgname          = $$self{'prefix'} . $package{'name'};
    $package{'rpmname'}  = $pkgname;
    $package{'specname'} = "$pkgname.spec";
 
