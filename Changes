@@ -18,4 +18,10 @@ Any suggestions, bug reports, or donations :-) should be sent to me.
     see what it required
   - Reorganized to be a real module with a wrapper script (to make it work
     better with CPAN)
+  - Move to github.  Gabor Szabo
 
+1.02
+  - Fixed a problem where the package was getting named with two dashes.
+    github contribution by divereigh
+  - Fixed a problem where packages with .so files weren't handled correctly
+    on CentOS (and perhaps others).  github contribution by divereigh
