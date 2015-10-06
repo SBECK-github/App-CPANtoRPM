@@ -205,7 +205,7 @@ sub _args {
 #                 }
 #                                        Similar to files but limited to the
 #                                        files that are actually installed.
-#   lib_inst   => 1                      if we're installing .pm files
+#   lib_inst   => 1                      if we're installing noarch .pm files
 #   arch_inst  => 1                      if we're installing architecture .pm files
 #   bin_inst   => 1                      if we're installing scripts
 #   man1_inst  => 1
@@ -1952,13 +1952,19 @@ sub _categorize_files {
             if      ($f =~ /\.exists$/) {
                next;
 
-            } elsif ($f =~ m,^lib/\Q$ARCH\E/.*\.pm$, || $f =~ m,^arch/auto/.*\.so$,) {
+            } elsif ($f =~ m,^lib/\Q$ARCH\E/.*\.pm$,  ||
+                     $f =~ m,^arch/auto/.*\.pm$,) {
                $package{'instfiles'}{'pm'}{$f}      = 1;
                $package{'arch_inst'}                = 1;
 
             } elsif ($f =~ m,.*\.pm$,) {
                $package{'instfiles'}{'pm'}{$f}      = 1;
                $package{'lib_inst'}                 = 1;
+
+            } elsif ($f =~ m,^lib/\Q$ARCH\E/.*\.so$,  ||
+                     $f =~ m,^arch/auto/.*\.so$,) {
+               $package{'instfiles'}{'lib'}{$f}     = 1;
+               $package{'arch_inst'}                = 1;
 
             } elsif ($f =~ m,^(script|bin)/,) {
                $package{'instfiles'}{'scripts'}{$f} = 1;
@@ -2046,7 +2052,7 @@ sub _categorize_files {
 
    # If we are doing an arch install, then turn off the noarch lib_inst
    if ($package{'arch_inst'}) {
-       $package{'lib_inst'}=0;
+      $package{'lib_inst'}=0;
    }
 
    #
@@ -3149,13 +3155,13 @@ sub _commands {
          $package{'man_dir'}  = '%{_mandir}';
          if      ($insttype eq 'perl') {
             $package{'lib_dir'}  = '%{perl_privlib}';
-            $package{'arch_dir'}  = '%{perl_archlib}';
+            $package{'arch_dir'} = '%{perl_archlib}';
          } elsif ($insttype eq 'site') {
             $package{'lib_dir'}  = '%{perl_sitelib}';
-            $package{'arch_dir'}  = '%{perl_sitearch}';
+            $package{'arch_dir'} = '%{perl_sitearch}';
          } else {
             $package{'lib_dir'}  = '%{perl_vendorlib}';
-            $package{'arch_dir'}  = '%{perl_vendorarch}';
+            $package{'arch_dir'} = '%{perl_vendorarch}';
          }
 
          last DIR_ARGS;
