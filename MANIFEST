@@ -11,6 +11,8 @@ examples/test_vers.pl
 INSTALL
 internal/_no_tests
 internal/build.yaml
+internal/perl.prov
+internal/perl.req
 internal/TODO
 lib/Package/CPANtoRPM.pm
 lib/Package/CPANtoRPM.pod

@@ -20,7 +20,7 @@ Any suggestions, bug reports, or donations :-) should be sent to me.
     better with CPAN)
   - Move to github.  Gabor Szabo
 
-1.02
+1.02  2015-10-12
   - Fixed a problem where the package was getting named with two dashes.
     github contribution by divereigh
   - Fixed a problem where packages with .so files weren't handled correctly
