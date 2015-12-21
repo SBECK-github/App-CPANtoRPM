@@ -47,7 +47,7 @@
    "provides" : {
       "Package::CPANtoRPM" : {
          "file" : "CPANtoRPM.pm",
-         "version" : "1.02"
+         "version" : "1.03"
       }
    },
    "release_status" : "stable",
@@ -58,6 +58,6 @@
          "web" : "https://github.com/SBECK-github/MODULE_PKG"
       }
    },
-   "version" : "1.02",
+   "version" : "1.03",
    "x_serialization_backend" : "JSON::PP version 2.27203"
 }

@@ -9,7 +9,7 @@ use strict;
 use warnings;
 
 our($VERSION);
-$VERSION = "1.02";
+$VERSION = "1.03";
 
 use Package::CPANtoRPM;
 my $self = Package::CPANtoRPM->_new();
