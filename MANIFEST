@@ -14,8 +14,8 @@ internal/build.yaml
 internal/perl.prov
 internal/perl.req
 internal/TODO
-lib/Package/CPANtoRPM.pm
-lib/Package/CPANtoRPM.pod
+lib/App/CPANtoRPM.pm
+lib/App/CPANtoRPM.pod
 LICENSE
 Makefile.PL
 MANIFEST			This list of files

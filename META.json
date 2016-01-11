@@ -12,7 +12,7 @@
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
       "version" : "2"
    },
-   "name" : "cpantorpm",
+   "name" : "App-CPANtoRPM",
    "no_index" : {
       "directory" : [
          "t",
@@ -45,8 +45,12 @@
       }
    },
    "provides" : {
-      "Package::CPANtoRPM" : {
+      "App::CPANtoRPM" : {
          "file" : "CPANtoRPM.pm",
+         "version" : "1.03"
+      },
+      "cpantorpm" : {
+         "file" : "cpantorpm",
          "version" : "1.03"
       }
    },
@@ -54,8 +58,8 @@
    "resources" : {
       "repository" : {
          "type" : "git",
-         "url" : "git://github.com/SBECK-github/MODULE_PKG.git",
-         "web" : "https://github.com/SBECK-github/MODULE_PKG"
+         "url" : "git://github.com/SBECK-github/App-CPANtoRPM.git",
+         "web" : "https://github.com/SBECK-github/App-CPANtoRPM"
       }
    },
    "version" : "1.03",

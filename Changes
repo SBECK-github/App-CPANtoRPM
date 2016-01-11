@@ -25,3 +25,6 @@ Any suggestions, bug reports, or donations :-) should be sent to me.
     github contribution by divereigh
   - Fixed a problem where packages with .so files weren't handled correctly
     on CentOS (and perhaps others).  github contribution by divereigh
+
+1.03  2016-01-11
+  - Renamed to App-CPANtoRPM.  

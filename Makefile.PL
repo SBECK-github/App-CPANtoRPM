@@ -1,5 +1,5 @@
 ######################################################################
-# Makefile.PL for cpantorpm
+# Makefile.PL for App::CPANtoRPM
 ######################################################################
 
 use strict;
@@ -37,7 +37,7 @@ if ($EU_MM_V < 6.64) {
 }
 
 WriteMakefile(
-   NAME             => "cpantorpm",
+   NAME             => "App::CPANtoRPM",
    VERSION          => "1.03",
    ABSTRACT         => "An RPM packager for perl modules",
    LICENSE          => "perl",
@@ -57,8 +57,12 @@ WriteMakefile(
    ($EU_MM_V > 6.45
     ? (META_ADD => {
           provides     => {
-             'Package::CPANtoRPM' => {
+             'App::CPANtoRPM' => {
                 file    => 'CPANtoRPM.pm',
+                version => '1.03',
+             },
+             'cpantorpm' => {
+                file    => 'cpantorpm',
                 version => '1.03',
              },
 
@@ -75,8 +79,8 @@ WriteMakefile(
           resources    => {
              repository => {
                 type => 'git',
-                web  => 'https://github.com/SBECK-github/MODULE_PKG',
-                url  => 'git://github.com/SBECK-github/MODULE_PKG.git',
+                web  => 'https://github.com/SBECK-github/App-CPANtoRPM',
+                url  => 'git://github.com/SBECK-github/App-CPANtoRPM.git',
              },
           },
        }
@@ -88,6 +92,10 @@ WriteMakefile(
                         'bin/cpantorpm',
 
                        ],
+
+   MAN1PODS => {
+      'bin/cpantorpm.pod' => 'blib/man1/cpantorpm.1'
+   },
 
 
 );
