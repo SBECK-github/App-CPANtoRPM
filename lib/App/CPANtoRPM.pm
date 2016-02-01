@@ -1655,7 +1655,7 @@ sub _check_rpm_build {
    $self->_log_message('INFO',"RPM build arch: $arch");
 
    $self->_log_message('INFO',"Creating directory: $topdir");
-   make_dir($topdir)  if (! -d $topdir);
+   $self->_make_dir($topdir)  if (! -d $topdir);
    if (! -w $topdir) {
       $self->_log_message('ERR',
                           "Unable to write to directory: $topdir",
@@ -1672,7 +1672,7 @@ sub _check_rpm_build {
                        "RPMS/$arch") {
       if (! -d "$topdir/$subdir") {
          $self->_log_message('INFO',"Creating directory: $subdir");
-         make_dir("$topdir/$subdir");
+         $self->_make_dir("$topdir/$subdir");
       }
    }
 }
