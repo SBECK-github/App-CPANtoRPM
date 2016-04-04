@@ -94,7 +94,7 @@ WriteMakefile(
                        ],
 
    MAN1PODS => {
-      'bin/cpantorpm.pod' => 'blib/man1/cpantorpm.1'
+      'bin/cpantorpm.pod' => 'blib/man1/cpantorpm.1',
    },
 
 
