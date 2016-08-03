@@ -2522,6 +2522,10 @@ sub _get_meta_field {
    return  if ($package{$pack_field}  ||
                ! exists $OUTPUT->{$meta_field});
    $package{$pack_field} = $OUTPUT->{$meta_field};
+   # Due to a bug in Parse::CPAN::Meta, it is possible for the characters
+   # "\n" to be translated to embedded newlines, which will cause
+   # issues - we replace them with spaces here
+   $package{$pack_field} =~ s/\n/ /gs;
 }
 
 # This will get the NAME, SUMMARY, and DESCRIPTION sections of a POD
