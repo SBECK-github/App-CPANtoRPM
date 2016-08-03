@@ -1,5 +1,5 @@
-package Package::CPANtoRPM;
-# Copyright (c) 2012-2015 Sullivan Beck. All rights reserved.
+package App::CPANtoRPM;
+# Copyright (c) 2012-2016 Sullivan Beck. All rights reserved.
 # This program is free software; you can redistribute it and/or modify it
 # under the same terms as Perl itself.
 
@@ -11,7 +11,7 @@ use POSIX;
 use IO::File;
 
 our($VERSION);
-$VERSION = "1.03";
+$VERSION = "1.06";
 
 $| = 1;
 
@@ -680,7 +680,7 @@ sub _find_exe {
    unshift(@path,@extra_path);
 
    foreach my $d (@path) {
-      return "$d/$exe"  if (-x "$d/$exe");
+      return "$d/$exe"  if (-x "$d/$exe"  &&  ! -d "$d/$exe");
    }
 
    return '';
@@ -1323,7 +1323,21 @@ sub _build_rpm {
 
    my $rpmbuild = $self->_find_exe("rpmbuild");
    if (! $rpmbuild) {
-      $self->_log_message('ERR','Unable to locate rpmbuild command');
+
+      my $rpm = $self->_find_exe("rpm");
+      if (! $rpm) {
+         $self->_log_message('ERR','Unable to locate rpmbuild command');
+      }
+
+      my @out = `$rpm -ba 2>&1`;
+      chomp(@out);
+      my @tmp = grep(/unknown option/,@out);
+      if (@tmp) {
+         $self->_log_message('ERR',
+                             'Unable to locate rpm command that supports -ba');
+      }
+
+      $rpmbuild = $rpm;
    }
 
    if ($$self{'no_tests'} == 1) {
@@ -1655,7 +1669,7 @@ sub _check_rpm_build {
    $self->_log_message('INFO',"RPM build arch: $arch");
 
    $self->_log_message('INFO',"Creating directory: $topdir");
-   make_dir($topdir)  if (! -d $topdir);
+   $self->_make_dir($topdir)  if (! -d $topdir);
    if (! -w $topdir) {
       $self->_log_message('ERR',
                           "Unable to write to directory: $topdir",
@@ -1672,7 +1686,7 @@ sub _check_rpm_build {
                        "RPMS/$arch") {
       if (! -d "$topdir/$subdir") {
          $self->_log_message('INFO',"Creating directory: $subdir");
-         make_dir("$topdir/$subdir");
+         $self->_make_dir("$topdir/$subdir");
       }
    }
 }
@@ -3291,7 +3305,12 @@ sub _run_command {
 sub _strace {
    my($self,$pid) = @_;
 
-   my $strace = $self->_find_exe('strace');
+   my $strace;
+   if ($^O eq 'aix') {
+      $strace = $self->_find_exe('truss');
+   } else {
+      $strace = $self->_find_exe('strace');
+   }
    if (! $strace) {
       $self->_log_message('ERR','strace executable not found');
    }
@@ -3315,7 +3334,8 @@ sub _strace {
       return "WAITING";
 
    } elsif ($trace =~ /No such process/  ||
-            $trace =~ /Operation not permitted/) {
+            $trace =~ /Operation not permitted/  ||
+            $trace =~ /Cannot control process/) {
       # If the process is done or in defunct state
       return "DONE";
    }

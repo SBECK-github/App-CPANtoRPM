@@ -8,26 +8,29 @@ build_requires:
 configure_requires:
   ExtUtils::MakeMaker: '6.30'
 dynamic_config: 1
-generated_by: 'ExtUtils::MakeMaker version 7.04, CPAN::Meta::Converter version 2.150005'
+generated_by: 'ExtUtils::MakeMaker version 7.1, CPAN::Meta::Converter version 2.150005'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
   version: '1.4'
-name: cpantorpm
+name: App-CPANtoRPM
 no_index:
   directory:
     - t
     - inc
 provides:
-  Package::CPANtoRPM:
+  App::CPANtoRPM:
     file: CPANtoRPM.pm
-    version: '1.03'
+    version: '1.06'
+  cpantorpm:
+    file: cpantorpm
+    version: '1.06'
 requires:
   Config: '0'
   IO::File: '0'
   POSIX: '0'
   perl: '5.006'
 resources:
-  repository: git://github.com/SBECK-github/MODULE_PKG.git
-version: '1.03'
-x_serialization_backend: 'CPAN::Meta::YAML version 0.012'
+  repository: git://github.com/SBECK-github/App-CPANtoRPM.git
+version: '1.06'
+x_serialization_backend: 'CPAN::Meta::YAML version 0.018'
