@@ -38,7 +38,7 @@ if ($EU_MM_V < 6.64) {
 
 WriteMakefile(
    NAME             => "App::CPANtoRPM",
-   VERSION          => "1.06",
+   VERSION          => "1.07",
    ABSTRACT         => "An RPM packager for perl modules",
    LICENSE          => "perl",
    ($EU_MM_V >= 6.48
@@ -59,11 +59,11 @@ WriteMakefile(
           provides     => {
              'App::CPANtoRPM' => {
                 file    => 'CPANtoRPM.pm',
-                version => '1.06',
+                version => '1.07',
              },
              'cpantorpm' => {
                 file    => 'cpantorpm',
-                version => '1.06',
+                version => '1.07',
              },
 
           },
