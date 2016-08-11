@@ -31,4 +31,12 @@ Any suggestions, bug reports, or donations :-) should be sent to me.
 
 1.04  2016-02-01
   - Fixed a typo.  Mike Schmidt
+
+1.05  2016-04-04
   - Fixes for AIX.   Douglas Irvine
+
+1.06  2016-08-11
+  - Fixed a problem where multi-line strings in the META.* files caused
+    problems.  github contribution by divereigh
+
+1.07

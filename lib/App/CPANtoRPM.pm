@@ -802,9 +802,6 @@ sub _multiple_methods {
             next METHOD;
          }
 
-         push(@print,
-              $self->_log_message('INFO',"Attempting system command: $command"));
-
          my $cmd;
          if ($type eq 'system-null') {
             $cmd = '(' . join(' ',$command,@args) . ") > /dev/null";
@@ -812,6 +809,9 @@ sub _multiple_methods {
             $cmd = '(' . join(' ',$command,@args) . ") > $TMPDIR/cmd.out";
          }
          $cmd =~ s/\{$bin\}/$exe/g;
+
+         push(@print,
+              $self->_log_message('INFO',"Attempting system command: $cmd"));
 
          if (system($cmd) != 0) {
             $self->_log_indent(+1);
@@ -1038,6 +1038,9 @@ sub _install_rpm {
       }
       unshift (@cmd,$sudo);
    }
+
+   my $cmd = join(' ',@cmd);
+   $self->_log_message('INFO',"Attempting system command: $cmd");
 
    if (system(@cmd) != 0) {
       $self->_log_message('ERR','Installation failed.');
@@ -1271,8 +1274,12 @@ sub _sign_interactive {
    my($self) = @_;
    $self->_log_message('INFO',"Signing with interactive rpm command");
 
-   system('rpm','--addsign',
-          $package{rpmfile},$package{srpmfile});
+   my @cmd = ('rpm','--addsign', $package{rpmfile}, $package{srpmfile});
+
+   my $cmd = join(' ',@cmd);
+   $self->_log_message('INFO',"Attempting system command: $cmd");
+
+   system(@cmd);
 }
 
 # This adds a macro to the rpmmacro file in such a way that at the end, it
@@ -1355,6 +1362,9 @@ sub _build_rpm {
                                    : ()),
               "$package{topdir}/SPECS/$package{specname}");
 
+   my $cmd = join(' ',@cmd);
+   $self->_log_message('INFO',"Attempting system command: $cmd");
+
    if (system(@cmd) != 0) {
       $self->_log_message('ERR',"Unable to execute $rpmbuild: $!");
    }
@@ -1414,7 +1424,10 @@ sub _make_spec {
    # Make sure we can run rpm.
    #
 
-   if (system('rpm --version > /dev/null') != 0) {
+   my $cmd = 'rpm --version > /dev/null';
+   $self->_log_message('INFO',"Attempting system command: $cmd");
+
+   if (system($cmd) != 0) {
       $self->_log_message('ERR','Unable to run rpm.');
    }
 
@@ -1881,11 +1894,14 @@ sub _get_meta {
    # Now clean up the directory.
    #
 
+   my $cmd;
    if ($package{'build_type'} eq 'build') {
-      system('./Build distclean');
+      $cmd = './Build distclean';
    } else {
-      system('make distclean');
+      $cmd = 'make distclean';
    }
+
+   system($cmd);
 }
 
 # Get a list of all of the files in the package.  We'll ignore directories.
@@ -2522,6 +2538,10 @@ sub _get_meta_field {
    return  if ($package{$pack_field}  ||
                ! exists $OUTPUT->{$meta_field});
    $package{$pack_field} = $OUTPUT->{$meta_field};
+
+   # Strings containing newlines in the META.* files cause problems,
+   # so change them to spaces.
+   $package{$pack_field} =~ tr{\n}{ }  if (! ref($OUTPUT->{$meta_field}));
 }
 
 # This will get the NAME, SUMMARY, and DESCRIPTION sections of a POD
@@ -3699,6 +3719,8 @@ sub _apply_patch {
         ('ERR','patch executable not found when trying to apply patch');
    }
    my $cmd = "cd $package{DIR}; $patch -p0 < $file";
+   $self->_log_message('INFO',"Attempting system command: $cmd");
+
    if (system($cmd) != 0) {
       $self->_log_message('ERR',"pre-package patch failed: $file");
    }
@@ -3725,6 +3747,8 @@ sub _run_script {
    $self->_log_message('INFO',"Running script: $script");
 
    my $cmd = "cd $package{DIR}; sh $script";
+   $self->_log_message('INFO',"Attempting system command: $cmd");
+
    if (system($cmd) != 0) {
       $self->_log_message('ERR',"pre-package script failed: $script");
    }

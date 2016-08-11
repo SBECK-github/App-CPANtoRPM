@@ -15,11 +15,6 @@ The cpantorpm tool is a script to take a package from CPAN and turn it
 into an RPM.  Please refer to the documentation for cpantorpm for more
 information.
 
-Originarlly, this was distributed as a script alone, but so many of
-the CPAN tools are not designed to support a script-only distribution,
-so I have moved most the functionality into a module and written a
-simple wrapper script to call it.
-
 =head1 SEE ALSO
 
 L<cpantorpm> - a tool to turn CPAN pacakges into RPMs
