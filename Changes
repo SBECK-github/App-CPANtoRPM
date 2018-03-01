@@ -40,3 +40,6 @@ Any suggestions, bug reports, or donations :-) should be sent to me.
     problems.  github contribution by divereigh
 
 1.07
+  - cpantorpm-depreq ignores Config (which isn't indexed, so it shouldn't
+    be listed as a prereq)
+
