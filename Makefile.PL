@@ -13,7 +13,6 @@ my $Pvers   = $];
 my $ConvVers= $ExtUtils::MakeMaker::VERSION;
 
 my %module_prereq = (
-   'Config'                   => '0',
    'IO::File'                 => '0',
    'POSIX'                    => '0',
 );
