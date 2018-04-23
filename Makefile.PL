@@ -57,7 +57,7 @@ WriteMakefile(
     ? (META_ADD => {
           provides     => {
              'App::CPANtoRPM' => {
-                file    => 'CPANtoRPM.pm',
+                file    => 'lib/App/CPANtoRPM.pm',
                 version => '1.07',
              },
              'cpantorpm' => {
@@ -87,8 +87,8 @@ WriteMakefile(
     : ()),
 
    EXE_FILES        => [
-                        'bin/cpantorpm-depreq',
                         'bin/cpantorpm',
+                        'bin/cpantorpm-depreq',
 
                        ],
 
