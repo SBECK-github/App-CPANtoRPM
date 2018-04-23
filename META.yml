@@ -8,7 +8,7 @@ build_requires:
 configure_requires:
   ExtUtils::MakeMaker: '6.30'
 dynamic_config: 1
-generated_by: 'ExtUtils::MakeMaker version 7.1, CPAN::Meta::Converter version 2.150010'
+generated_by: 'ExtUtils::MakeMaker version 7.34, CPAN::Meta::Converter version 2.150010'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -20,7 +20,7 @@ no_index:
     - inc
 provides:
   App::CPANtoRPM:
-    file: CPANtoRPM.pm
+    file: lib/App/CPANtoRPM.pm
     version: '1.07'
   cpantorpm:
     file: cpantorpm

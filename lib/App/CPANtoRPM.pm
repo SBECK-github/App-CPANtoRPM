@@ -441,6 +441,9 @@ sub _parse_args {
    my($self) = @_;
    my @a     = @ARGV;
 
+   # We have to get the package first or else --optfile will not work.
+   $$self{'package'} = pop(@a);
+
    while ($_ = shift(@a)) {
 
       $self->_usage,                           exit  if ($_ eq '-h'  ||
@@ -475,8 +478,8 @@ sub _parse_args {
       $$self{'clean_macros'} = 1,              next  if ($_ eq '--clean-macros');
       $$self{'build_type'} = shift(@a),        next  if ($_ eq '--build-type');
       $$self{'group'} = shift(@a),             next  if ($_ eq '--group');
-      push(@{ $$self{'config'} }, shift),      next  if ($_ eq '--config');
-      push(@{ $$self{'build'} }, shift),       next  if ($_ eq '--build');
+      push(@{ $$self{'config'} }, shift(@a)),  next  if ($_ eq '--config');
+      push(@{ $$self{'build'} }, shift(@a)),   next  if ($_ eq '--build');
       $$self{'release'} = shift(@a),           next  if ($_ eq '--release');
       $$self{'disttag'} = shift(@a),           next  if ($_ eq '--disttag');
       $$self{'epoch'} = shift(@a),             next  if ($_ eq '--epoch');
@@ -529,7 +532,6 @@ sub _parse_args {
          next;
       }
 
-      $$self{'package'} = $_;
       die "ERROR: unknown arguments: $_ @a\n"  if (@a);
    }
 
