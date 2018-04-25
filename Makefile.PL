@@ -87,8 +87,8 @@ WriteMakefile(
     : ()),
 
    EXE_FILES        => [
-                        'bin/cpantorpm',
                         'bin/cpantorpm-depreq',
+                        'bin/cpantorpm',
 
                        ],
 

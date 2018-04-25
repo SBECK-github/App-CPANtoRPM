@@ -1,7 +1,7 @@
 ---
 abstract: 'An RPM packager for perl modules'
 author:
-  - 'Sullivan Beck <sbeck@cpan.org>'
+  - 'Sullivan Beck (sbeck@cpan.org)'
 build_requires:
   ExtUtils::MakeMaker: '0'
   Test::More: '0'
