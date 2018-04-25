@@ -39,7 +39,7 @@ our %Macros     = (0 => {
 
 our ($OUTPUT,@OUTPUT,%package,$MAN);
 $package{'VERSION'} = $VERSION;
-$package{'date'}    = POSIX::strftime("%a %B %d %Y",localtime());
+$package{'date'}    = POSIX::strftime("%a %b %d %Y",localtime());
 
 ###############################################################################
 ###############################################################################
@@ -112,7 +112,7 @@ sub _new {
    $package{'CMD'}     = $COM;
    $package{'command'} = $0;
    $package{'args'}    = $self->_args();
-   $package{'date'}    = POSIX::strftime("%a %B %d %Y",localtime());
+   $package{'date'}    = POSIX::strftime("%a %b %d %Y",localtime());
    $package{'self'}    = $self;
 
    return $self;
@@ -1554,7 +1554,7 @@ sub _make_spec {
          }
       }
 
-      while ($line =~ /(<(?:(quiet):)?([^>]+)>)/) {
+      while ($line =~ /((?:^|(?<=[^\\]))<(?:(quiet):)?([^>]+)>)/) {
          my ($tag,$flag,$var) = ($1,$2,$3);
          $flag = ''  if (! $flag);
 
@@ -1580,6 +1580,9 @@ sub _make_spec {
    }
 
    foreach my $line (@lines) {
+      $line =~ s/\\</</g;
+      $line =~ s/\\>/>/g;
+
       print $out "$line\n";
    }
 
@@ -4279,6 +4282,10 @@ rm -rf <_buildroot>
 <if:man3_inst>
 <man_dir>/man3/*
 <endif:man3_inst>
+
++%changelog
++* <date> <packager> <version>-<release>
++- Generated using the cpantorpm
 
 <eof>
 # Local Variables:
