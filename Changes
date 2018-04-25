@@ -3,6 +3,10 @@ Written by:
 Any suggestions, bug reports, or donations :-) should be sent to me.
 
 1.08
+  - Added %changelog section to SPEC file.  Ji-Hyeon Gim
+  - Fixed date format to match the standard.  Ji-Hyeon Gim
+  - Fixed a problem where emails of the form 'Name <Email>'
+    caused problems when adding them to the templated.  Ji-Hyeon Gim
 
 1.07  2018-04-23
   - cpantorpm-depreq ignores Config (which isn't indexed, so it shouldn't
