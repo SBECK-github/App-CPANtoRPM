@@ -22,10 +22,10 @@ no_index:
 provides:
   App::CPANtoRPM:
     file: lib/App/CPANtoRPM.pm
-    version: '1.11'
+    version: '1.12'
   cpantorpm:
     file: cpantorpm
-    version: '1.11'
+    version: '1.12'
 requires:
   IO::File: '0'
   POSIX: '0'
@@ -33,5 +33,5 @@ requires:
   perl: '5.006'
 resources:
   repository: git://github.com/SBECK-github/App-CPANtoRPM.git
-version: '1.11'
+version: '1.12'
 x_serialization_backend: 'CPAN::Meta::YAML version 0.018'
