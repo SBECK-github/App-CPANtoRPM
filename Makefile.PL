@@ -15,6 +15,7 @@ my $ConvVers= $ExtUtils::MakeMaker::VERSION;
 my %module_prereq = (
    'IO::File'                 => '0',
    'POSIX'                    => '0',
+   'locale'                   => '0',
 );
 
 my %script_prereq = (

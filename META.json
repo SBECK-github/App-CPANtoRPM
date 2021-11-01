@@ -34,6 +34,7 @@
          "requires" : {
             "IO::File" : "0",
             "POSIX" : "0",
+            "locale" : "0",
             "perl" : "5.006"
          }
       },
