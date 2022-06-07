@@ -57,6 +57,10 @@
    },
    "release_status" : "stable",
    "resources" : {
+      "bugtracker" : {
+         "web" : "https://github.com/SBECK-github/App-CPANtoRPM/issues"
+      },
+      "homepage" : "https://github.com/SBECK-github/App-CPANtoRPM",
       "repository" : {
          "type" : "git",
          "url" : "git://github.com/SBECK-github/App-CPANtoRPM.git",

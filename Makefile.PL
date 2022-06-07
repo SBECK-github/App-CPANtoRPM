@@ -78,6 +78,10 @@ WriteMakefile(
              version   => 2,
           },
           resources    => {
+             bugtracker => {
+                web  => 'https://github.com/SBECK-github/App-CPANtoRPM/issues',
+             },
+             homepage => 'https://github.com/SBECK-github/App-CPANtoRPM',
              repository => {
                 type => 'git',
                 web  => 'https://github.com/SBECK-github/App-CPANtoRPM',
