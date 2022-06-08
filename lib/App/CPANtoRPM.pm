@@ -12,7 +12,7 @@ use POSIX qw(locale_h);
 use IO::File;
 
 our($VERSION);
-$VERSION="1.13";
+$VERSION="1.14";
 
 $| = 1;
 
