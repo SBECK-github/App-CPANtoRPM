@@ -626,6 +626,7 @@ sub _parse_args {
    if (! exists $$self{'incl_compat'}) {
       $$self{'incl_compat'} = 1;
    }
+   $package{'incl_compat'}= $$self{'incl_compat'};
 
    $package{'incl_tests'} = ($$self{'no_tests'} == 2 ? 0 : 1);
    $package{'incl_deps'}  = ($$self{'no_deps'} == 2 ? 0 : 1);
