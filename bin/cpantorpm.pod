@@ -305,6 +305,23 @@ may include a version:
 Related to the previous options, these options allow you to remove a feature
 from the requirements list, or the list of features provided.
 
+=item B<--repl-require FEATURE=VERS>
+
+=item B<--repl-provide FEATURE=VERS>
+
+Occasionally, the module author explicitly defines the version of a feature
+that is required, or provided by this module, in a way that breaks things.
+
+For example, if the perl RPM that is installed on the system provides
+the feature perl=5.24.1 but the module requires perl=5.024001, rpmbuild
+may not work because it doesn't know how to compare these two version
+numbers to know whether the requirement is met.
+
+These options (which can be included any number of times) will replace the
+version for either a required feature or a provided feature as they will
+appear in the spec file.  That way, for example, you can make the version
+of the requirement match what is provided in other RPMs.
+
 =item B<-m, --macros>
 
 Use the macro form of common SPEC constructs over the environment variable
@@ -572,9 +589,13 @@ When working with a CPAN module, you must use the form:
 
    Foo::Bar
 
-instead of
+instead of a file form:
 
    Foo-Bar
+   Foo-Bar-1.00
+   Foo-Bar-1.00.tar.gz
+
+These are not currently supported.
 
 When downloading from a URL, both ftp:// and http:// URLs are
 supported (though others such as file:// and https:// are not
