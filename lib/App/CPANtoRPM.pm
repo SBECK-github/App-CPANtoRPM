@@ -64,12 +64,14 @@ sub _new {
                'config'       => [],
                'config_input' => [],
                'cpan'         => 'cpanplus',
+               'cwd'          => '',
                'debug'        => 0,
                'description'  => '',
                'disttag'      => '%{?dist}',
                'env'          => {},
                'epoch'        => '',
                'extracted'    => '',
+               'file_path'    => '',
                'gpg_name'     => '',
                'gpg_passfile' => '',
                'gpg_passwd'   => '',
@@ -93,6 +95,8 @@ sub _new {
                'release'      => 1,
                'rem_provide'  => [],
                'rem_require'  => [],
+               'repl_provide' => [],
+               'repl_require' => [],
                'rpmbuild'     => '',
                'runtime_rec'  => 0,
                'script'       => '',
@@ -104,6 +108,10 @@ sub _new {
                'version'      => '',
                'yum'          => '',
               };
+
+   my $cwd             = `pwd`;
+   chomp($cwd);
+   $$self{'cwd'}       = $cwd;
 
    $COM                = $0;
    $COM                =~ s/^.*\///;
@@ -472,6 +480,7 @@ This takes a perl modules and creates an RPM version of it.
 sub _parse_args {
    my($self) = @_;
    my @a     = @ARGV;
+   $self->_usage, exit  unless @a;
 
    # We have to get the package first or else --optfile will not work.
    if ($a[$#a] !~ /^-/) {
@@ -560,6 +569,10 @@ sub _parse_args {
                                                next  if ($_ eq '--rem-require');
       push(@{ $$self{'rem_provide'} }, shift(@a)),
                                                next  if ($_ eq '--rem-provide');
+      push(@{ $$self{'repl_require'} }, shift(@a)),
+                                               next  if ($_ eq '--repl-require');
+      push(@{ $$self{'repl_provide'} }, shift(@a)),
+                                               next  if ($_ eq '--repl-provide');
 
       if ($_ eq '--env') {
          my $tmp = shift(@a);
@@ -1439,7 +1452,7 @@ sub _build_rpm {
    #
 
    if (system(@cmd) != 0) {
-      $self->_log_message('ERR',"Unable to execute $rpmbuild: $!");
+      $self->_log_message('ERR',"Unable to execute $rpmbuild");
    }
    chdir($TMPDIR);
 
@@ -1904,7 +1917,7 @@ sub _get_meta {
             "   Archive:  $package{vers}",
             "   Metadata: $package{m_version}",
             "They must be the same, OR you must manually set the version",
-            "with the --version option.");
+            "with the --vers option.");
       }
 
       $package{'version'} = $package{'vers'};
@@ -2834,7 +2847,7 @@ sub _provides {
 
          foreach my $mod (keys %{ $package{'m_provides'}}) {
             my $m = "perl($mod)";
-            my $v = $package{'m_provides'}{'version'}  ||  $package{'version'};
+            my $v = $package{'m_provides'}{$mod}{'version'} || $package{'version'};
             $v    =~ s/^v//;
             $package{'provides'}{$m} = $v;
          }
@@ -2914,6 +2927,38 @@ sub _provides {
 
    foreach my $feat (@{ $$self{'rem_provide'} }) {
       delete $package{'provides'}{$feat};
+   }
+
+   #
+   # If we're replacing provides or requires
+   #
+
+   foreach my $feat (@{ $$self{'repl_provide'} }) {
+      my($mod,$ver);
+      if ($feat =~ /^(.+)=(.+)$/) {
+         ($mod,$ver) = ($1,$2);
+      } else {
+         ($mod,$ver) = ($feat,$package{'version'});
+      }
+
+      if (exists $package{'provides'}{$mod}) {
+         $package{'provides'}{$mod} = $ver;
+      }
+   }
+
+   foreach my $feat (@{ $$self{'repl_require'} }) {
+      my($mod,$ver);
+      if ($feat =~ /^(.+)=(.+)$/) {
+         ($mod,$ver) = ($1,$2);
+      } else {
+         ($mod,$ver) = ($feat,$package{'version'});
+      }
+
+      foreach my $type (qw(runtime test build)) {
+         if (exists $package{'requires'}{$type}{$mod}) {
+            $package{'requires'}{$type}{$mod} = $ver;
+         }
+      }
    }
 
    #
@@ -3175,6 +3220,30 @@ sub _build {
    }
 
    #
+   # We have to see if a Build.PL is Module::Build::Tiny.
+   #
+
+   $package{'build_tiny'} = 0;
+   if ($type eq 'build') {
+      if (-f "_build_params") {
+         # Module::Build::Tiny produces ./_build_params
+
+         $self->_log_message('INFO','Using Module::Build::Tiny');
+         $package{'build_tiny'} = 1;
+
+      } elsif (-f "_build/build_params") {
+         # Module::Build produces _build/build_params
+         $self->_log_message('INFO','Using Module::Build');
+
+      } else {
+         $self->_log_message
+           ('ERR',
+            'perl Build.PL did not produce a build_params file',
+            'using any known Build.PL method');
+      }
+   }
+
+   #
    # If we didn't pass get an installation type, we need to figure out
    # what it is now.  This is because Build.PL uses the same variables
    # to set the locations of all types of builds, so we need to know
@@ -3185,16 +3254,12 @@ sub _build {
    # alternate directory, but it doesn't hurt even if we're not.
    #
 
-   $package{'build_tiny'} = 0;
    if (! $$self{'inst_type'}) {
       if ($type eq 'build') {
 
-         if (-f "_build_params") {
+         if ($package{'build_tiny'}) {
             # Module::Build::Tiny
             #    _build_params includes: "installdirs=core"
-
-            $self->_log_message('INFO','Using Module::Build::Tiny');
-            $package{'build_tiny'} = 1;
             my @tmp = `cat _build_params | grep "installdirs"`;
             chomp(@tmp);
             if (@tmp) {
@@ -3210,13 +3275,10 @@ sub _build {
                $$self{'inst_type'} = 'site';
             }
 
-         } elsif (-f "_build/build_params") {
-
+         } else {
             # Module::Build
             #    _build/build_params contains:
             #       'installdirs' => 'core',
-
-            $self->_log_message('INFO','Using Module::Build');
             my @tmp = `cat _build/build_params | grep "'installdirs' =>"`;
             chomp(@tmp);
             if (@tmp != 1) {
@@ -3227,12 +3289,6 @@ sub _build {
             }
             $tmp[0] =~ /=> '(.*?)'/;
             $$self{'inst_type'} = $1;
-
-         } else {
-            $self->_log_message
-              ('ERR',
-               'perl Build.PL did not produce a build_params file',
-               'using any known Build.PL method');
          }
 
          $$self{'inst_type'} = 'perl'  if ($$self{'inst_type'} eq 'core');
@@ -3618,10 +3674,9 @@ sub _check_deps {
 
    my $error = 0;
    foreach my $feat (sort keys %deps) {
-      next  if ($feat !~ /^perl\((.*)\)/);
-      my $mod = $1;
+      next  if ($feat =~ /^perl\((.*)\)/);
       my $v   = $deps{$feat};
-      my $err = $self->_load_module($mod,$v);
+      my $err = $self->_load_module($feat,$v);
       if ($err) {
          $error = 1;
          $self->_log_message
@@ -3777,12 +3832,13 @@ sub _get_package {
    my($self,$package) = @_;
 
    $self->_log_message('HEAD',"Obtaining package: $package");
+   my $is_file = $self->_is_file($package);
 
-   if      ($package =~ m,^(http|ftp)://,) {
+   if      ($package =~ m,^(https|http|ftp)://,) {
       $self->_get_package_url($package);
-   } elsif (-d $package) {
+   } elsif ($is_file eq 'dir') {
       $self->_get_package_dir($package);
-   } elsif (-e $package) {
+   } elsif ($is_file eq 'file') {
       $self->_get_package_file($package);
    } else {
       $self->_get_package_cpan($package);
@@ -3802,6 +3858,30 @@ sub _get_package {
 
    $self->_apply_patch();
    $self->_run_script();
+}
+sub _is_file {
+   my($self,$package) = @_;
+
+   my $cwd = `pwd`;
+   chomp($cwd);
+   chdir $$self{'cwd'};
+   my $ret = '';
+   if (-d $package) {
+      $ret = 'dir';
+   } elsif (-e $package) {
+      $ret = 'file';
+   }
+   chdir($cwd);
+
+   # Set the file_path
+   if ($ret) {
+      if ($package =~ m,^/,) {
+         $$self{'file_path'} = $package;
+      } else {
+         $$self{'file_path'} = $$self{'cwd'} . "/" . $package;
+      }
+   }
+   return $ret;
 }
 
 # This will copy the directory unmodified into the temporary directory.
@@ -3828,7 +3908,7 @@ sub _get_package_dir {
       $self->_log_message('INFO',"Diretory name not specified. Assuming '.'");
       my $succ = $self->_multiple_methods( [ sub { 1; } ],
                                            ['system','pwd',
-                                            "cd '$package'; {pwd}"],
+                                            "cd '$$self{file_path}'; {pwd}"],
                                          );
 
       if (! $succ  ||  ! @OUTPUT) {
@@ -3859,9 +3939,9 @@ sub _get_package_dir {
      ( [ sub { -d "$TMPDIR/$dir" } ],
        ['module','File::Copy::Recursive',['dircopy'],
         "\$File::Copy::Recursive::CPRFComp = 1; " .
-        "dircopy('$package','$TMPDIR')" ],
+        "dircopy('$$self{file_path}','$TMPDIR')" ],
        ['system','cp',
-        "{cp} -r '$package' '$TMPDIR'"],
+        "{cp} -r '$$self{file_path}' '$TMPDIR'"],
      );
 
    if (! $succ) {
@@ -3884,7 +3964,7 @@ sub _get_package_file {
    $package{'fromsrc'} = $package;
 
    my($valid,$dir,$dist,$vers,$archive,$ext,$filetype) =
-     $self->_is_archive($package);
+     $self->_is_archive($$self{'file_path'});
 
    if (! $valid) {
       $self->_log_message('ERR',"Package file not a valid archive: $package");
@@ -3901,7 +3981,7 @@ sub _get_package_file {
 
    $self->_log_message('INFO',"Copying file");
 
-   $self->_backup_file($package,$TMPDIR,1);
+   $self->_backup_file($$self{'file_path'},$TMPDIR,1);
 
    # Extract it.
 
