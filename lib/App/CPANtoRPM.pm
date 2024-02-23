@@ -480,6 +480,7 @@ This takes a perl modules and creates an RPM version of it.
 sub _parse_args {
    my($self) = @_;
    my @a     = @ARGV;
+   $self->_usage, exit  unless @a;
 
    # We have to get the package first or else --optfile will not work.
    if ($a[$#a] !~ /^-/) {
@@ -2929,6 +2930,38 @@ sub _provides {
    }
 
    #
+   # If we're replacing provides or requires
+   #
+
+   foreach my $feat (@{ $$self{'repl_provide'} }) {
+      my($mod,$ver);
+      if ($feat =~ /^(.+)=(.+)$/) {
+         ($mod,$ver) = ($1,$2);
+      } else {
+         ($mod,$ver) = ($feat,$package{'version'});
+      }
+
+      if (exists $package{'provides'}{$mod}) {
+         $package{'provides'}{$mod} = $ver;
+      }
+   }
+
+   foreach my $feat (@{ $$self{'repl_require'} }) {
+      my($mod,$ver);
+      if ($feat =~ /^(.+)=(.+)$/) {
+         ($mod,$ver) = ($1,$2);
+      } else {
+         ($mod,$ver) = ($feat,$package{'version'});
+      }
+
+      foreach my $type (qw(runtime test build)) {
+         if (exists $package{'requires'}{$type}{$mod}) {
+            $package{'requires'}{$type}{$mod} = $ver;
+         }
+      }
+   }
+
+   #
    # Handle any added provides.
    #
 
@@ -3187,6 +3220,30 @@ sub _build {
    }
 
    #
+   # We have to see if a Build.PL is Module::Build::Tiny.
+   #
+
+   $package{'build_tiny'} = 0;
+   if ($type eq 'build') {
+      if (-f "_build_params") {
+         # Module::Build::Tiny produces ./_build_params
+
+         $self->_log_message('INFO','Using Module::Build::Tiny');
+         $package{'build_tiny'} = 1;
+
+      } elsif (-f "_build/build_params") {
+         # Module::Build produces _build/build_params
+         $self->_log_message('INFO','Using Module::Build');
+
+      } else {
+         $self->_log_message
+           ('ERR',
+            'perl Build.PL did not produce a build_params file',
+            'using any known Build.PL method');
+      }
+   }
+
+   #
    # If we didn't pass get an installation type, we need to figure out
    # what it is now.  This is because Build.PL uses the same variables
    # to set the locations of all types of builds, so we need to know
@@ -3197,16 +3254,12 @@ sub _build {
    # alternate directory, but it doesn't hurt even if we're not.
    #
 
-   $package{'build_tiny'} = 0;
    if (! $$self{'inst_type'}) {
       if ($type eq 'build') {
 
-         if (-f "_build_params") {
+         if ($package{'build_tiny'}) {
             # Module::Build::Tiny
             #    _build_params includes: "installdirs=core"
-
-            $self->_log_message('INFO','Using Module::Build::Tiny');
-            $package{'build_tiny'} = 1;
             my @tmp = `cat _build_params | grep "installdirs"`;
             chomp(@tmp);
             if (@tmp) {
@@ -3222,13 +3275,10 @@ sub _build {
                $$self{'inst_type'} = 'site';
             }
 
-         } elsif (-f "_build/build_params") {
-
+         } else {
             # Module::Build
             #    _build/build_params contains:
             #       'installdirs' => 'core',
-
-            $self->_log_message('INFO','Using Module::Build');
             my @tmp = `cat _build/build_params | grep "'installdirs' =>"`;
             chomp(@tmp);
             if (@tmp != 1) {
@@ -3239,12 +3289,6 @@ sub _build {
             }
             $tmp[0] =~ /=> '(.*?)'/;
             $$self{'inst_type'} = $1;
-
-         } else {
-            $self->_log_message
-              ('ERR',
-               'perl Build.PL did not produce a build_params file',
-               'using any known Build.PL method');
          }
 
          $$self{'inst_type'} = 'perl'  if ($$self{'inst_type'} eq 'core');
